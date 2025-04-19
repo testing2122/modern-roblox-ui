@@ -19,6 +19,14 @@ lib.dragging = false;
 lib.drag_offset = Vector2.new();
 lib.current_tab = nil;
 
+-- Custom colors
+local colors = {
+    toggle_on = Color3.fromRGB(70, 70, 70),         -- Dark grey for toggle ON state (changed from blue)
+    toggle_knob_on = Color3.fromRGB(220, 220, 220), -- Light grey for toggle knob ON state
+    toggle_off = Color3.fromRGB(50, 50, 50),        -- Default grey for toggle OFF state
+    toggle_knob_off = Color3.fromRGB(180, 180, 180) -- Default grey for toggle knob OFF state
+}
+
 -- Create shine effect for hover
 local function create_shine(parent)
     local shine = Instance.new("Frame");
@@ -231,16 +239,27 @@ function lib:create_window(cfg)
         main.Enabled = lib.toggled;
     end
     
-    -- Create separator for tabs
+    -- Create separator for tabs (improved)
     function win:create_tab_separator()
+        local separator_container = Instance.new("Frame");
+        separator_container.Name = "separator_container";
+        separator_container.BackgroundTransparency = 1;
+        separator_container.Size = UDim2.new(1, -10, 0, 8); -- Container for separator with padding
+        separator_container.Parent = tabscroll;
+        
         local separator = Instance.new("Frame");
         separator.Name = "separator";
-        separator.BackgroundColor3 = Color3.fromRGB(45, 45, 45);
+        separator.BackgroundColor3 = Color3.fromRGB(55, 55, 55);
         separator.BorderSizePixel = 0;
-        separator.Size = UDim2.new(1, -10, 0, 1);
-        separator.Parent = tabscroll;
+        separator.Position = UDim2.new(0, 5, 0.5, 0);
+        separator.Size = UDim2.new(1, -10, 0, 2); -- Thicker separator
+        separator.Parent = separator_container;
         
-        return separator;
+        local sep_corner = Instance.new("UICorner");
+        sep_corner.CornerRadius = UDim.new(1, 0); -- Rounded separator
+        sep_corner.Parent = separator;
+        
+        return separator_container;
     end
 
     -- Create tab function
@@ -351,16 +370,27 @@ function lib:create_window(cfg)
             tabscroll.CanvasSize = UDim2.new(0, 0, 0, tablist.AbsoluteContentSize.Y + 10);
         end);
         
-        -- Create separator function for tab content
+        -- Create separator function for tab content (improved)
         function tab:create_separator()
+            local separator_container = Instance.new("Frame");
+            separator_container.Name = "separator_container";
+            separator_container.BackgroundTransparency = 1;
+            separator_container.Size = UDim2.new(1, 0, 0, 8); -- Container for separator with padding
+            separator_container.Parent = page;
+            
             local separator = Instance.new("Frame");
             separator.Name = "separator";
-            separator.BackgroundColor3 = Color3.fromRGB(45, 45, 45);
+            separator.BackgroundColor3 = Color3.fromRGB(55, 55, 55);
             separator.BorderSizePixel = 0;
-            separator.Size = UDim2.new(1, 0, 0, 1);
-            separator.Parent = page;
+            separator.Position = UDim2.new(0, 0, 0.5, 0);
+            separator.Size = UDim2.new(1, 0, 0, 2); -- Thicker separator
+            separator.Parent = separator_container;
             
-            return separator;
+            local sep_corner = Instance.new("UICorner");
+            sep_corner.CornerRadius = UDim.new(1, 0); -- Rounded separator
+            sep_corner.Parent = separator;
+            
+            return separator_container;
         end
         
         -- Create paragraph function for tab
@@ -425,299 +455,3 @@ function lib:create_window(cfg)
             
             return paragraph_frame;
         end
-        
-        -- Create button function for tab with title and description
-        function tab:create_button(btn_cfg)
-            btn_cfg = btn_cfg or {};
-            
-            -- Container for the entire button component (title + button + description)
-            local btn_container = Instance.new("Frame");
-            btn_container.Name = "button_container";
-            btn_container.BackgroundTransparency = 1;
-            btn_container.Size = UDim2.new(1, 0, 0, 0); -- Will be auto-sized
-            btn_container.AutomaticSize = Enum.AutomaticSize.Y;
-            btn_container.Parent = page;
-            
-            local container_list = Instance.new("UIListLayout");
-            container_list.Padding = UDim.new(0, 3);
-            container_list.SortOrder = Enum.SortOrder.LayoutOrder;
-            container_list.Parent = btn_container;
-            
-            -- Title (optional)
-            if btn_cfg.title then
-                local title = Instance.new("TextLabel");
-                title.Name = "title";
-                title.BackgroundTransparency = 1;
-                title.Size = UDim2.new(1, 0, 0, 18);
-                title.Font = Enum.Font.GothamBold;
-                title.Text = btn_cfg.title;
-                title.TextColor3 = Color3.fromRGB(230, 230, 230);
-                title.TextSize = 12;
-                title.TextXAlignment = Enum.TextXAlignment.Left;
-                title.TextWrapped = true;
-                title.LayoutOrder = 1;
-                title.Parent = btn_container;
-            end
-            
-            -- Button
-            local button = Instance.new("TextButton");
-            button.Name = btn_cfg.name or "button";
-            button.BackgroundColor3 = Color3.fromRGB(40, 40, 40);
-            button.BorderSizePixel = 0;
-            button.Size = UDim2.new(1, 0, 0, 30);
-            button.Font = Enum.Font.Gotham;
-            button.Text = btn_cfg.text or "button";
-            button.TextColor3 = Color3.fromRGB(230, 230, 230);
-            button.TextSize = 12;
-            button.AutoButtonColor = false;
-            button.ClipsDescendants = true; -- For ripple effect
-            button.ZIndex = 2;
-            button.LayoutOrder = 2;
-            button.Parent = btn_container;
-            
-            local buttonstroke = Instance.new("UIStroke");
-            buttonstroke.Color = Color3.fromRGB(60, 60, 60);
-            buttonstroke.Thickness = 1;
-            buttonstroke.Parent = button;
-            
-            local buttoncorner = Instance.new("UICorner");
-            buttoncorner.CornerRadius = UDim.new(0, 4);
-            buttoncorner.Parent = button;
-            
-            -- Add shine effect for hover
-            create_shine(button);
-            
-            -- Add ripple effect for click
-            button.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    create_ripple(button, input.Position);
-                end
-            end);
-            
-            -- Description (optional)
-            if btn_cfg.description then
-                local description = Instance.new("TextLabel");
-                description.Name = "description";
-                description.BackgroundTransparency = 1;
-                description.Size = UDim2.new(1, 0, 0, 0);
-                description.AutomaticSize = Enum.AutomaticSize.Y;
-                description.Font = Enum.Font.Gotham;
-                description.Text = btn_cfg.description;
-                description.TextColor3 = Color3.fromRGB(180, 180, 180);
-                description.TextSize = 11;
-                description.TextWrapped = true;
-                description.TextXAlignment = Enum.TextXAlignment.Left;
-                description.LayoutOrder = 3;
-                description.Parent = btn_container;
-            end
-            
-            -- Connect callback
-            button.MouseButton1Click:Connect(function()
-                if btn_cfg.callback then
-                    btn_cfg.callback();
-                end
-            end);
-            
-            return btn_container;
-        end
-        
-        -- Create toggle switch function
-        function tab:create_toggle(toggle_cfg)
-            toggle_cfg = toggle_cfg or {};
-            local toggle_state = toggle_cfg.default or false;
-            
-            -- Track toggle in flags
-            if toggle_cfg.flag then
-                lib.flags[toggle_cfg.flag] = toggle_state;
-            end
-            
-            -- Container for the toggle component
-            local toggle_container = Instance.new("Frame");
-            toggle_container.Name = "toggle_container";
-            toggle_container.BackgroundTransparency = 1;
-            toggle_container.Size = UDim2.new(1, 0, 0, 0);
-            toggle_container.AutomaticSize = Enum.AutomaticSize.Y;
-            toggle_container.Parent = page;
-            
-            local container_list = Instance.new("UIListLayout");
-            container_list.Padding = UDim.new(0, 3);
-            container_list.SortOrder = Enum.SortOrder.LayoutOrder;
-            container_list.Parent = toggle_container;
-            
-            -- Title (optional)
-            if toggle_cfg.title then
-                local title = Instance.new("TextLabel");
-                title.Name = "title";
-                title.BackgroundTransparency = 1;
-                title.Size = UDim2.new(1, 0, 0, 18);
-                title.Font = Enum.Font.GothamBold;
-                title.Text = toggle_cfg.title;
-                title.TextColor3 = Color3.fromRGB(230, 230, 230);
-                title.TextSize = 12;
-                title.TextXAlignment = Enum.TextXAlignment.Left;
-                title.TextWrapped = true;
-                title.LayoutOrder = 1;
-                title.Parent = toggle_container;
-            end
-            
-            -- Toggle button with track and knob
-            local toggle_frame = Instance.new("Frame");
-            toggle_frame.Name = "toggle_frame";
-            toggle_frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40);
-            toggle_frame.BorderSizePixel = 0;
-            toggle_frame.Size = UDim2.new(1, 0, 0, 30);
-            toggle_frame.ClipsDescendants = true;
-            toggle_frame.LayoutOrder = 2;
-            toggle_frame.Parent = toggle_container;
-            
-            local frame_stroke = Instance.new("UIStroke");
-            frame_stroke.Color = Color3.fromRGB(60, 60, 60);
-            frame_stroke.Thickness = 1;
-            frame_stroke.Parent = toggle_frame;
-            
-            local frame_corner = Instance.new("UICorner");
-            frame_corner.CornerRadius = UDim.new(0, 4);
-            frame_corner.Parent = toggle_frame;
-            
-            -- Toggle text
-            local toggle_text = Instance.new("TextLabel");
-            toggle_text.Name = "text";
-            toggle_text.BackgroundTransparency = 1;
-            toggle_text.Position = UDim2.new(0, 10, 0, 0);
-            toggle_text.Size = UDim2.new(1, -60, 1, 0);
-            toggle_text.Font = Enum.Font.Gotham;
-            toggle_text.Text = toggle_cfg.text or "toggle";
-            toggle_text.TextColor3 = Color3.fromRGB(230, 230, 230);
-            toggle_text.TextSize = 12;
-            toggle_text.TextXAlignment = Enum.TextXAlignment.Left;
-            toggle_text.Parent = toggle_frame;
-            
-            -- Toggle track (background)
-            local track = Instance.new("Frame");
-            track.Name = "track";
-            track.AnchorPoint = Vector2.new(1, 0.5);
-            track.BackgroundColor3 = Color3.fromRGB(50, 50, 50);
-            track.BorderSizePixel = 0;
-            track.Position = UDim2.new(1, -10, 0.5, 0);
-            track.Size = UDim2.new(0, 40, 0, 18);
-            track.Parent = toggle_frame;
-            
-            local track_corner = Instance.new("UICorner");
-            track_corner.CornerRadius = UDim.new(1, 0);
-            track_corner.Parent = track;
-            
-            -- Toggle knob (indicator)
-            local knob = Instance.new("Frame");
-            knob.Name = "knob";
-            knob.AnchorPoint = Vector2.new(0, 0.5);
-            knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200);
-            knob.BorderSizePixel = 0;
-            knob.Position = UDim2.new(0, 2, 0.5, 0);
-            knob.Size = UDim2.new(0, 14, 0, 14);
-            knob.Parent = track;
-            
-            local knob_corner = Instance.new("UICorner");
-            knob_corner.CornerRadius = UDim.new(1, 0);
-            knob_corner.Parent = knob;
-            
-            -- Toggle hit box
-            local hitbox = Instance.new("TextButton");
-            hitbox.Name = "hitbox";
-            hitbox.BackgroundTransparency = 1;
-            hitbox.Size = UDim2.new(1, 0, 1, 0);
-            hitbox.Text = "";
-            hitbox.ZIndex = 10;
-            hitbox.Parent = toggle_frame;
-            
-            -- Add ripple effect
-            hitbox.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    create_ripple(toggle_frame, input.Position);
-                end
-            end);
-            
-            -- Description (optional)
-            if toggle_cfg.description then
-                local description = Instance.new("TextLabel");
-                description.Name = "description";
-                description.BackgroundTransparency = 1;
-                description.Size = UDim2.new(1, 0, 0, 0);
-                description.AutomaticSize = Enum.AutomaticSize.Y;
-                description.Font = Enum.Font.Gotham;
-                description.Text = toggle_cfg.description;
-                description.TextColor3 = Color3.fromRGB(180, 180, 180);
-                description.TextSize = 11;
-                description.TextWrapped = true;
-                description.TextXAlignment = Enum.TextXAlignment.Left;
-                description.LayoutOrder = 3;
-                description.Parent = toggle_container;
-            end
-            
-            -- Update toggle visual state
-            local function update_toggle()
-                if toggle_state then
-                    ts:Create(track, toggle_tween, {BackgroundColor3 = Color3.fromRGB(80, 120, 255)}):Play();
-                    ts:Create(knob, toggle_tween, {Position = UDim2.new(1, -16, 0.5, 0), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play();
-                else
-                    ts:Create(track, toggle_tween, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play();
-                    ts:Create(knob, toggle_tween, {Position = UDim2.new(0, 2, 0.5, 0), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}):Play();
-                end
-                
-                if toggle_cfg.flag then
-                    lib.flags[toggle_cfg.flag] = toggle_state;
-                end
-                
-                if toggle_cfg.callback then
-                    toggle_cfg.callback(toggle_state);
-                end
-            end
-            
-            -- Set initial state
-            if toggle_state then
-                knob.Position = UDim2.new(1, -16, 0.5, 0);
-                knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255);
-                track.BackgroundColor3 = Color3.fromRGB(80, 120, 255);
-            end
-            
-            -- Connect toggle functionality
-            hitbox.MouseButton1Click:Connect(function()
-                toggle_state = not toggle_state;
-                update_toggle();
-            end);
-            
-            -- Public toggle API
-            local toggle_api = {};
-            
-            function toggle_api:set_state(state)
-                if toggle_state ~= state then
-                    toggle_state = state;
-                    update_toggle();
-                end
-            end
-            
-            function toggle_api:get_state()
-                return toggle_state;
-            end
-            
-            return toggle_api;
-        end
-        
-        tab.button = tabbutton;
-        tab.container = page;
-        
-        return tab;
-    end
-
-    -- Key binding to toggle UI
-    uis.InputBegan:Connect(function(input)
-        if input.KeyCode == (cfg.toggle_key or Enum.KeyCode.RightShift) then
-            win:toggle();
-        end
-    end);
-
-    win.base = base;
-    win.container = container;
-    return win;
-end
-
-return lib;

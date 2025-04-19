@@ -347,10 +347,103 @@ function lib:create_window(cfg)
             tabscroll.CanvasSize = UDim2.new(0, 0, 0, tablist.AbsoluteContentSize.Y + 10);
         end);
         
-        -- Create button function for tab
+        -- Create paragraph function for tab
+        function tab:create_paragraph(p_cfg)
+            p_cfg = p_cfg or {};
+            
+            local paragraph_frame = Instance.new("Frame");
+            paragraph_frame.Name = "paragraph";
+            paragraph_frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35);
+            paragraph_frame.BorderSizePixel = 0;
+            paragraph_frame.Size = UDim2.new(1, 0, 0, 0); -- Will be auto-sized
+            paragraph_frame.AutomaticSize = Enum.AutomaticSize.Y;
+            paragraph_frame.Parent = page;
+            
+            local frame_stroke = Instance.new("UIStroke");
+            frame_stroke.Color = Color3.fromRGB(55, 55, 55);
+            frame_stroke.Thickness = 1;
+            frame_stroke.Parent = paragraph_frame;
+            
+            local frame_corner = Instance.new("UICorner");
+            frame_corner.CornerRadius = UDim.new(0, 4);
+            frame_corner.Parent = paragraph_frame;
+            
+            -- Title if provided
+            if p_cfg.title then
+                local title = Instance.new("TextLabel");
+                title.Name = "title";
+                title.BackgroundTransparency = 1;
+                title.Position = UDim2.new(0, 10, 0, 8);
+                title.Size = UDim2.new(1, -20, 0, 20);
+                title.Font = Enum.Font.GothamBold;
+                title.Text = p_cfg.title;
+                title.TextColor3 = Color3.fromRGB(255, 255, 255);
+                title.TextSize = 14;
+                title.TextXAlignment = Enum.TextXAlignment.Left;
+                title.Parent = paragraph_frame;
+            end
+            
+            -- Content text
+            local content = Instance.new("TextLabel");
+            content.Name = "content";
+            content.BackgroundTransparency = 1;
+            content.Position = UDim2.new(0, 10, 0, p_cfg.title and 30 or 8);
+            content.Size = UDim2.new(1, -20, 0, 0);
+            content.AutomaticSize = Enum.AutomaticSize.Y;
+            content.Font = Enum.Font.Gotham;
+            content.Text = p_cfg.text or "Paragraph text";
+            content.TextColor3 = Color3.fromRGB(200, 200, 200);
+            content.TextSize = 12;
+            content.TextWrapped = true;
+            content.TextXAlignment = Enum.TextXAlignment.Left;
+            content.TextYAlignment = Enum.TextYAlignment.Top;
+            content.Parent = paragraph_frame;
+            
+            -- Padding at the bottom
+            local padding = Instance.new("Frame");
+            padding.Name = "padding";
+            padding.BackgroundTransparency = 1;
+            padding.Position = UDim2.new(0, 0, 1, -8);
+            padding.Size = UDim2.new(1, 0, 0, 8);
+            padding.Parent = paragraph_frame;
+            
+            return paragraph_frame;
+        end
+        
+        -- Create button function for tab with title and description
         function tab:create_button(btn_cfg)
             btn_cfg = btn_cfg or {};
             
+            -- Container for the entire button component (title + button + description)
+            local btn_container = Instance.new("Frame");
+            btn_container.Name = "button_container";
+            btn_container.BackgroundTransparency = 1;
+            btn_container.Size = UDim2.new(1, 0, 0, 0); -- Will be auto-sized
+            btn_container.AutomaticSize = Enum.AutomaticSize.Y;
+            btn_container.Parent = page;
+            
+            local container_list = Instance.new("UIListLayout");
+            container_list.Padding = UDim.new(0, 3);
+            container_list.SortOrder = Enum.SortOrder.LayoutOrder;
+            container_list.Parent = btn_container;
+            
+            -- Title (optional)
+            if btn_cfg.title then
+                local title = Instance.new("TextLabel");
+                title.Name = "title";
+                title.BackgroundTransparency = 1;
+                title.Size = UDim2.new(1, 0, 0, 18);
+                title.Font = Enum.Font.GothamBold;
+                title.Text = btn_cfg.title;
+                title.TextColor3 = Color3.fromRGB(230, 230, 230);
+                title.TextSize = 12;
+                title.TextXAlignment = Enum.TextXAlignment.Left;
+                title.TextWrapped = true;
+                title.LayoutOrder = 1;
+                title.Parent = btn_container;
+            end
+            
+            -- Button
             local button = Instance.new("TextButton");
             button.Name = btn_cfg.name or "button";
             button.BackgroundColor3 = Color3.fromRGB(40, 40, 40);
@@ -363,7 +456,8 @@ function lib:create_window(cfg)
             button.AutoButtonColor = false;
             button.ClipsDescendants = true; -- For ripple effect
             button.ZIndex = 2;
-            button.Parent = page;
+            button.LayoutOrder = 2;
+            button.Parent = btn_container;
             
             local buttonstroke = Instance.new("UIStroke");
             buttonstroke.Color = Color3.fromRGB(60, 60, 60);
@@ -384,6 +478,23 @@ function lib:create_window(cfg)
                 end
             end);
             
+            -- Description (optional)
+            if btn_cfg.description then
+                local description = Instance.new("TextLabel");
+                description.Name = "description";
+                description.BackgroundTransparency = 1;
+                description.Size = UDim2.new(1, 0, 0, 0);
+                description.AutomaticSize = Enum.AutomaticSize.Y;
+                description.Font = Enum.Font.Gotham;
+                description.Text = btn_cfg.description;
+                description.TextColor3 = Color3.fromRGB(180, 180, 180);
+                description.TextSize = 11;
+                description.TextWrapped = true;
+                description.TextXAlignment = Enum.TextXAlignment.Left;
+                description.LayoutOrder = 3;
+                description.Parent = btn_container;
+            end
+            
             -- Connect callback
             button.MouseButton1Click:Connect(function()
                 if btn_cfg.callback then
@@ -391,7 +502,7 @@ function lib:create_window(cfg)
                 end
             end);
             
-            return button;
+            return btn_container;
         end
         
         tab.button = tabbutton;

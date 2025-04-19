@@ -8,11 +8,81 @@ local ws = game:GetService("Workspace");
 local scrn = Vector2.new();
 local mouse = plrs.LocalPlayer:GetMouse();
 
+-- Tween info presets
+local shine_tween = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+local ripple_tween = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+
 lib.flags = {};
 lib.toggled = false;
 lib.dragging = false;
 lib.drag_offset = Vector2.new();
 lib.current_tab = nil;
+
+-- Create shine effect for hover
+local function create_shine(parent)
+    local shine = Instance.new("Frame");
+    shine.Name = "shine";
+    shine.BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+    shine.BackgroundTransparency = 1;
+    shine.BorderSizePixel = 0;
+    shine.Size = UDim2.new(1, 0, 1, 0);
+    shine.ZIndex = parent.ZIndex + 1;
+    shine.Parent = parent;
+    
+    local shine_corner = Instance.new("UICorner");
+    shine_corner.CornerRadius = UDim.new(0, 4);
+    shine_corner.Parent = shine;
+    
+    -- Add hover events
+    parent.MouseEnter:Connect(function()
+        ts:Create(shine, shine_tween, {BackgroundTransparency = 0.9}):Play();
+    end);
+    
+    parent.MouseLeave:Connect(function()
+        ts:Create(shine, shine_tween, {BackgroundTransparency = 1}):Play();
+    end);
+    
+    return shine;
+end
+
+-- Create ripple effect for click
+local function create_ripple(parent, input_pos)
+    -- Get relative position
+    local relative_pos = Vector2.new(input_pos.X - parent.AbsolutePosition.X, input_pos.Y - parent.AbsolutePosition.Y);
+    
+    -- Create ripple
+    local ripple = Instance.new("Frame");
+    ripple.Name = "ripple";
+    ripple.AnchorPoint = Vector2.new(0.5, 0.5);
+    ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+    ripple.BackgroundTransparency = 0.7;
+    ripple.BorderSizePixel = 0;
+    ripple.Position = UDim2.new(0, relative_pos.X, 0, relative_pos.Y);
+    ripple.Size = UDim2.new(0, 0, 0, 0);
+    ripple.ZIndex = parent.ZIndex + 2;
+    ripple.Parent = parent;
+    
+    local ripple_corner = Instance.new("UICorner");
+    ripple_corner.CornerRadius = UDim.new(1, 0); -- Circular ripple
+    ripple_corner.Parent = ripple;
+    
+    -- Calculate max size (diagonal of the button)
+    local size_x = math.max(relative_pos.X, parent.AbsoluteSize.X - relative_pos.X);
+    local size_y = math.max(relative_pos.Y, parent.AbsoluteSize.Y - relative_pos.Y);
+    local max_size = math.sqrt(size_x^2 + size_y^2) * 2;
+    
+    -- Play ripple animation
+    local tween = ts:Create(ripple, ripple_tween, {
+        Size = UDim2.new(0, max_size, 0, max_size),
+        BackgroundTransparency = 1
+    });
+    
+    tween:Play();
+    
+    tween.Completed:Connect(function()
+        ripple:Destroy();
+    end);
+end
 
 function lib:create_window(cfg)
     cfg = cfg or {};
@@ -30,8 +100,8 @@ function lib:create_window(cfg)
     base.BackgroundColor3 = Color3.fromRGB(25, 25, 25);
     base.BorderColor3 = Color3.fromRGB(40, 40, 40);
     base.BorderSizePixel = 1;
-    base.Position = UDim2.new(0.5, -300, 0.5, -200); -- Increased size
-    base.Size = UDim2.new(0, 600, 0, 400); -- Increased size
+    base.Position = UDim2.new(0.5, -300, 0.5, -200);
+    base.Size = UDim2.new(0, 600, 0, 400);
     base.Parent = main;
 
     local stroke = Instance.new("UIStroke");
@@ -117,8 +187,8 @@ function lib:create_window(cfg)
     container.Name = "container";
     container.BackgroundColor3 = Color3.fromRGB(30, 30, 30);
     container.BorderSizePixel = 0;
-    container.Position = UDim2.new(0, 150, 0, 35); -- Moved to accommodate tabpanel
-    container.Size = UDim2.new(1, -155, 1, -40); -- Resized to accommodate tabpanel
+    container.Position = UDim2.new(0, 150, 0, 35);
+    container.Size = UDim2.new(1, -155, 1, -40);
     container.Parent = base;
 
     local containerstroke = Instance.new("UIStroke");
@@ -176,6 +246,8 @@ function lib:create_window(cfg)
         tabbutton.TextColor3 = Color3.fromRGB(200, 200, 200);
         tabbutton.TextSize = 12;
         tabbutton.AutoButtonColor = false;
+        tabbutton.ClipsDescendants = true; -- For ripple effect
+        tabbutton.ZIndex = 2;
         tabbutton.Parent = tabscroll;
         
         local tabbuttonstroke = Instance.new("UIStroke");
@@ -186,6 +258,16 @@ function lib:create_window(cfg)
         local tabbuttoncorner = Instance.new("UICorner");
         tabbuttoncorner.CornerRadius = UDim.new(0, 4);
         tabbuttoncorner.Parent = tabbutton;
+        
+        -- Add shine effect for hover
+        create_shine(tabbutton);
+        
+        -- Add ripple effect for click
+        tabbutton.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                create_ripple(tabbutton, input.Position);
+            end
+        end);
         
         -- Tab separator (line below the tab)
         local separator = Instance.new("Frame");
@@ -264,6 +346,53 @@ function lib:create_window(cfg)
         tablist:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             tabscroll.CanvasSize = UDim2.new(0, 0, 0, tablist.AbsoluteContentSize.Y + 10);
         end);
+        
+        -- Create button function for tab
+        function tab:create_button(btn_cfg)
+            btn_cfg = btn_cfg or {};
+            
+            local button = Instance.new("TextButton");
+            button.Name = btn_cfg.name or "button";
+            button.BackgroundColor3 = Color3.fromRGB(40, 40, 40);
+            button.BorderSizePixel = 0;
+            button.Size = UDim2.new(1, 0, 0, 30);
+            button.Font = Enum.Font.Gotham;
+            button.Text = btn_cfg.text or "button";
+            button.TextColor3 = Color3.fromRGB(230, 230, 230);
+            button.TextSize = 12;
+            button.AutoButtonColor = false;
+            button.ClipsDescendants = true; -- For ripple effect
+            button.ZIndex = 2;
+            button.Parent = page;
+            
+            local buttonstroke = Instance.new("UIStroke");
+            buttonstroke.Color = Color3.fromRGB(60, 60, 60);
+            buttonstroke.Thickness = 1;
+            buttonstroke.Parent = button;
+            
+            local buttoncorner = Instance.new("UICorner");
+            buttoncorner.CornerRadius = UDim.new(0, 4);
+            buttoncorner.Parent = button;
+            
+            -- Add shine effect for hover
+            create_shine(button);
+            
+            -- Add ripple effect for click
+            button.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    create_ripple(button, input.Position);
+                end
+            end);
+            
+            -- Connect callback
+            button.MouseButton1Click:Connect(function()
+                if btn_cfg.callback then
+                    btn_cfg.callback();
+                end
+            end);
+            
+            return button;
+        end
         
         tab.button = tabbutton;
         tab.container = page;

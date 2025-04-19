@@ -11,6 +11,7 @@ local mouse = plrs.LocalPlayer:GetMouse();
 -- Tween info presets
 local shine_tween = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 local ripple_tween = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
+local toggle_tween = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out);
 
 lib.flags = {};
 lib.toggled = false;
@@ -229,6 +230,18 @@ function lib:create_window(cfg)
         lib.toggled = not lib.toggled;
         main.Enabled = lib.toggled;
     end
+    
+    -- Create separator for tabs
+    function win:create_tab_separator()
+        local separator = Instance.new("Frame");
+        separator.Name = "separator";
+        separator.BackgroundColor3 = Color3.fromRGB(45, 45, 45);
+        separator.BorderSizePixel = 0;
+        separator.Size = UDim2.new(1, -10, 0, 1);
+        separator.Parent = tabscroll;
+        
+        return separator;
+    end
 
     -- Create tab function
     function win:create_tab(tab_cfg)
@@ -268,15 +281,6 @@ function lib:create_window(cfg)
                 create_ripple(tabbutton, input.Position);
             end
         end);
-        
-        -- Tab separator (line below the tab)
-        local separator = Instance.new("Frame");
-        separator.Name = "separator";
-        separator.BackgroundColor3 = Color3.fromRGB(45, 45, 45);
-        separator.BorderSizePixel = 0;
-        separator.Position = UDim2.new(0, 5, 1, 0);
-        separator.Size = UDim2.new(1, -10, 0, 1);
-        separator.Parent = tabbutton;
         
         -- Tab page (content container for the tab)
         local page = Instance.new("ScrollingFrame");
@@ -346,6 +350,18 @@ function lib:create_window(cfg)
         tablist:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
             tabscroll.CanvasSize = UDim2.new(0, 0, 0, tablist.AbsoluteContentSize.Y + 10);
         end);
+        
+        -- Create separator function for tab content
+        function tab:create_separator()
+            local separator = Instance.new("Frame");
+            separator.Name = "separator";
+            separator.BackgroundColor3 = Color3.fromRGB(45, 45, 45);
+            separator.BorderSizePixel = 0;
+            separator.Size = UDim2.new(1, 0, 0, 1);
+            separator.Parent = page;
+            
+            return separator;
+        end
         
         -- Create paragraph function for tab
         function tab:create_paragraph(p_cfg)
@@ -503,6 +519,187 @@ function lib:create_window(cfg)
             end);
             
             return btn_container;
+        end
+        
+        -- Create toggle switch function
+        function tab:create_toggle(toggle_cfg)
+            toggle_cfg = toggle_cfg or {};
+            local toggle_state = toggle_cfg.default or false;
+            
+            -- Track toggle in flags
+            if toggle_cfg.flag then
+                lib.flags[toggle_cfg.flag] = toggle_state;
+            end
+            
+            -- Container for the toggle component
+            local toggle_container = Instance.new("Frame");
+            toggle_container.Name = "toggle_container";
+            toggle_container.BackgroundTransparency = 1;
+            toggle_container.Size = UDim2.new(1, 0, 0, 0);
+            toggle_container.AutomaticSize = Enum.AutomaticSize.Y;
+            toggle_container.Parent = page;
+            
+            local container_list = Instance.new("UIListLayout");
+            container_list.Padding = UDim.new(0, 3);
+            container_list.SortOrder = Enum.SortOrder.LayoutOrder;
+            container_list.Parent = toggle_container;
+            
+            -- Title (optional)
+            if toggle_cfg.title then
+                local title = Instance.new("TextLabel");
+                title.Name = "title";
+                title.BackgroundTransparency = 1;
+                title.Size = UDim2.new(1, 0, 0, 18);
+                title.Font = Enum.Font.GothamBold;
+                title.Text = toggle_cfg.title;
+                title.TextColor3 = Color3.fromRGB(230, 230, 230);
+                title.TextSize = 12;
+                title.TextXAlignment = Enum.TextXAlignment.Left;
+                title.TextWrapped = true;
+                title.LayoutOrder = 1;
+                title.Parent = toggle_container;
+            end
+            
+            -- Toggle button with track and knob
+            local toggle_frame = Instance.new("Frame");
+            toggle_frame.Name = "toggle_frame";
+            toggle_frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40);
+            toggle_frame.BorderSizePixel = 0;
+            toggle_frame.Size = UDim2.new(1, 0, 0, 30);
+            toggle_frame.ClipsDescendants = true;
+            toggle_frame.LayoutOrder = 2;
+            toggle_frame.Parent = toggle_container;
+            
+            local frame_stroke = Instance.new("UIStroke");
+            frame_stroke.Color = Color3.fromRGB(60, 60, 60);
+            frame_stroke.Thickness = 1;
+            frame_stroke.Parent = toggle_frame;
+            
+            local frame_corner = Instance.new("UICorner");
+            frame_corner.CornerRadius = UDim.new(0, 4);
+            frame_corner.Parent = toggle_frame;
+            
+            -- Toggle text
+            local toggle_text = Instance.new("TextLabel");
+            toggle_text.Name = "text";
+            toggle_text.BackgroundTransparency = 1;
+            toggle_text.Position = UDim2.new(0, 10, 0, 0);
+            toggle_text.Size = UDim2.new(1, -60, 1, 0);
+            toggle_text.Font = Enum.Font.Gotham;
+            toggle_text.Text = toggle_cfg.text or "toggle";
+            toggle_text.TextColor3 = Color3.fromRGB(230, 230, 230);
+            toggle_text.TextSize = 12;
+            toggle_text.TextXAlignment = Enum.TextXAlignment.Left;
+            toggle_text.Parent = toggle_frame;
+            
+            -- Toggle track (background)
+            local track = Instance.new("Frame");
+            track.Name = "track";
+            track.AnchorPoint = Vector2.new(1, 0.5);
+            track.BackgroundColor3 = Color3.fromRGB(50, 50, 50);
+            track.BorderSizePixel = 0;
+            track.Position = UDim2.new(1, -10, 0.5, 0);
+            track.Size = UDim2.new(0, 40, 0, 18);
+            track.Parent = toggle_frame;
+            
+            local track_corner = Instance.new("UICorner");
+            track_corner.CornerRadius = UDim.new(1, 0);
+            track_corner.Parent = track;
+            
+            -- Toggle knob (indicator)
+            local knob = Instance.new("Frame");
+            knob.Name = "knob";
+            knob.AnchorPoint = Vector2.new(0, 0.5);
+            knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200);
+            knob.BorderSizePixel = 0;
+            knob.Position = UDim2.new(0, 2, 0.5, 0);
+            knob.Size = UDim2.new(0, 14, 0, 14);
+            knob.Parent = track;
+            
+            local knob_corner = Instance.new("UICorner");
+            knob_corner.CornerRadius = UDim.new(1, 0);
+            knob_corner.Parent = knob;
+            
+            -- Toggle hit box
+            local hitbox = Instance.new("TextButton");
+            hitbox.Name = "hitbox";
+            hitbox.BackgroundTransparency = 1;
+            hitbox.Size = UDim2.new(1, 0, 1, 0);
+            hitbox.Text = "";
+            hitbox.ZIndex = 10;
+            hitbox.Parent = toggle_frame;
+            
+            -- Add ripple effect
+            hitbox.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    create_ripple(toggle_frame, input.Position);
+                end
+            end);
+            
+            -- Description (optional)
+            if toggle_cfg.description then
+                local description = Instance.new("TextLabel");
+                description.Name = "description";
+                description.BackgroundTransparency = 1;
+                description.Size = UDim2.new(1, 0, 0, 0);
+                description.AutomaticSize = Enum.AutomaticSize.Y;
+                description.Font = Enum.Font.Gotham;
+                description.Text = toggle_cfg.description;
+                description.TextColor3 = Color3.fromRGB(180, 180, 180);
+                description.TextSize = 11;
+                description.TextWrapped = true;
+                description.TextXAlignment = Enum.TextXAlignment.Left;
+                description.LayoutOrder = 3;
+                description.Parent = toggle_container;
+            end
+            
+            -- Update toggle visual state
+            local function update_toggle()
+                if toggle_state then
+                    ts:Create(track, toggle_tween, {BackgroundColor3 = Color3.fromRGB(80, 120, 255)}):Play();
+                    ts:Create(knob, toggle_tween, {Position = UDim2.new(1, -16, 0.5, 0), BackgroundColor3 = Color3.fromRGB(255, 255, 255)}):Play();
+                else
+                    ts:Create(track, toggle_tween, {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play();
+                    ts:Create(knob, toggle_tween, {Position = UDim2.new(0, 2, 0.5, 0), BackgroundColor3 = Color3.fromRGB(200, 200, 200)}):Play();
+                end
+                
+                if toggle_cfg.flag then
+                    lib.flags[toggle_cfg.flag] = toggle_state;
+                end
+                
+                if toggle_cfg.callback then
+                    toggle_cfg.callback(toggle_state);
+                end
+            end
+            
+            -- Set initial state
+            if toggle_state then
+                knob.Position = UDim2.new(1, -16, 0.5, 0);
+                knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255);
+                track.BackgroundColor3 = Color3.fromRGB(80, 120, 255);
+            end
+            
+            -- Connect toggle functionality
+            hitbox.MouseButton1Click:Connect(function()
+                toggle_state = not toggle_state;
+                update_toggle();
+            end);
+            
+            -- Public toggle API
+            local toggle_api = {};
+            
+            function toggle_api:set_state(state)
+                if toggle_state ~= state then
+                    toggle_state = state;
+                    update_toggle();
+                end
+            end
+            
+            function toggle_api:get_state()
+                return toggle_state;
+            end
+            
+            return toggle_api;
         end
         
         tab.button = tabbutton;
